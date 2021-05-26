@@ -21,4 +21,4 @@ from color import color
 print(color("[rgb(255, 0, 0)]hello[yellow]red[ansi(blue)]blue[ansi(56)]test[/]"))
 ```
 
-![Hello World](https://discord.com/channels/808241076657717268/808251620730339388/846919153029873664)
+![Hello World](/github/print.png)
