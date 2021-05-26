@@ -2,7 +2,7 @@
 
 [![PyPI version](https://badge.fury.io/py/monkey_color.svg)](https://badge.fury.io/py/monkey_color)
 
-## 安裝说明
+## 安裝說明
 
 使用`pip`或其他 PyPi 軟件包進行安裝
 
