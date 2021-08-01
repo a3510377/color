@@ -6,7 +6,7 @@
 
 使用`pip`或其他 PyPi 軟件包進行安裝
 
-```
+```cmd
 pip install monkey_color
 ```
 
