@@ -3,10 +3,22 @@ from typing import Iterable, Union, overload
 from ._utils import MISSING
 
 __all__ = (
+    "RED",
+    "GREEN",
+    "BLUE",
+    "HUE",
+    "SATURATION",
+    "LIGHTNESS",
     "Red",
     "Green",
     "Blue",
+    "Hue",
+    "Saturation",
+    "Lightness",
     "RGB",
+    "HSL",
+    "HSV",
+    "YUV",
 )
 
 RED = Union[int, float, "Red"]
@@ -103,11 +115,11 @@ class RGB(tuple):
 
 class HSL(tuple):
     @overload
-    def __new__(cls, h: Hue, s: Saturation, l: Lightness) -> "HSL":
+    def __new__(cls, h: HUE, s: SATURATION, l: LIGHTNESS) -> "HSL":
         ...
 
     @overload
-    def __new__(cls, d: tuple[Hue, Saturation, Lightness]) -> "HSL":
+    def __new__(cls, d: tuple[HUE, SATURATION, LIGHTNESS]) -> "HSL":
         ...
 
     def __new__(cls, h=MISSING, s=MISSING, l=MISSING) -> "HSL":
@@ -142,11 +154,11 @@ class HSL(tuple):
 
 class HSV(tuple):
     @overload
-    def __new__(cls, h: Hue, s: Saturation, v: int) -> "HSL":
+    def __new__(cls, h: HUE, s: SATURATION, v: float) -> "HSL":
         ...
 
     @overload
-    def __new__(cls, d: tuple[Hue, Saturation, Lightness]) -> "HSL":
+    def __new__(cls, d: tuple[HUE, SATURATION, float]) -> "HSL":
         ...
 
     def __new__(cls, h=MISSING, s=MISSING, v=MISSING) -> "HSL":
@@ -158,7 +170,7 @@ class HSV(tuple):
         if h is MISSING or s is MISSING or v is MISSING:
             raise ValueError("Missing value")
 
-        return super().__new__(cls, (h, s, v))
+        return super().__new__(cls, (Hue(h), Saturation(s), min(v, 1)))
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} h={self.h:g} s={self.s:g} l={self.v:g}>"
@@ -174,6 +186,45 @@ class HSV(tuple):
         return Saturation(self[1])
 
     @property
-    def v(self) -> int:
+    def v(self) -> float:
         """Return the lightness value using a :class:`Lightness` instance"""
+        return self[2]
+
+
+class YUV(tuple):
+    @overload
+    def __new__(cls, y: float, u: float, v: float) -> "YUV":
+        ...
+
+    @overload
+    def __new__(cls, d: tuple[float, float, float]) -> "YUV":
+        ...
+
+    def __new__(cls, y=MISSING, u=MISSING, v=MISSING) -> "YUV":
+        if isinstance(y, Iterable):
+            if len(y) != 3:
+                raise ValueError("Iterable must have 3 items")
+            y, u, v = y
+
+        if y is MISSING or u is MISSING or v is MISSING:
+            raise ValueError("Missing value")
+
+        return super().__new__(cls, (min(y, 1), min(u, 1), min(v, 1)))
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} y={self.y:g} u={self.u:g} v={self.v:g}>"
+
+    @property
+    def y(self) -> float:
+        """Return the y value"""
+        return self[0]
+
+    @property
+    def u(self) -> float:
+        """Return the u value"""
+        return self[1]
+
+    @property
+    def v(self) -> float:
+        """Return the v value"""
         return self[2]
