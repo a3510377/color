@@ -1,5 +1,5 @@
-from abc import abstractmethod
-from typing import Iterable, Union, overload
+from abc import ABC, abstractmethod
+from typing import Any, Iterable, Union, overload
 
 from typing_extensions import Self
 
@@ -37,12 +37,27 @@ RGB_TYPE = Union[int, tuple[RED_TYPE, GREEN_TYPE, BLUE_TYPE], "RGB"]
 RGBA_TYPE = Union[int, tuple[RED_TYPE, GREEN_TYPE, BLUE_TYPE, ALPHA_TYPE], "RGBA"]
 
 
-class _Float(float):
+class _Percent(float):
+    """
+    0~100% (float) => value = value
+    """
+
+    def __new__(cls, __x) -> Self:
+        return super().__new__(cls, min(1, __x))
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self:g}>"
 
 
-class _PercentValue(_Float):
+class Saturation(_Percent):
+    """"""
+
+
+class Lightness(_Percent):
+    """"""
+
+
+class _PercentValue(int):
     """
     0~100% (float) => value = cls.max * percent
 
@@ -51,20 +66,14 @@ class _PercentValue(_Float):
 
     max = 0xFF
 
-    def __new__(cls, __x) -> Self:
+    def __new__(cls, __x: int | float) -> Self:
         return super().__new__(
             cls,
             int(min(cls.max, __x * cls.max if isinstance(__x, float) else __x)),
         )
 
-
-class _Percent(_Float):
-    """
-    0~100% (float) => value = value
-    """
-
-    def __new__(cls, __x) -> Self:
-        return super().__new__(cls, min(1, __x))
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self:g}>"
 
 
 class Red(_PercentValue):
@@ -105,20 +114,54 @@ class Hue(_PercentValue):
     max = 360
 
 
-class Saturation(_Percent):
-    """"""
+class _IntColorTuple(tuple, ABC):
+    @abstractmethod
+    def to_int(cls) -> int:
+        raise NotImplementedError
+
+    def __parse_int(self, value: Any) -> int:
+        if isinstance(value, int):
+            return value
+        elif isinstance(value, self.__class__):
+            return value.to_int()
+
+        raise ValueError(f"Invalid value: {value}")
+
+    # ==
+    def __eq__(self, __value: Any) -> bool:
+        try:
+            return self.to_int() == self.__parse_int(__value)
+        except ValueError:
+            return False
+
+    # !=
+    def __ne__(self, __value: Any) -> bool:
+        return not self.__eq__(__value)
+
+    # <
+    def __lt__(self, __value: Any) -> bool:
+        try:
+            return self.to_int() < self.__parse_int(__value)
+        except ValueError:
+            return False
+
+    # >
+    def __gt__(self, __value: Any) -> bool:
+        try:
+            return self.to_int() > self.__parse_int(__value)
+        except ValueError:
+            return False
+
+    # <=
+    def __le__(self, __value: Any) -> bool:
+        return self == __value or self < __value
+
+    # >=
+    def __ge__(self, __value: Any) -> bool:
+        return self == __value or self > __value
 
 
-class Lightness(_Percent):
-    """"""
-
-
-@abstractmethod
-class _ColorTuple(tuple):
-    ...
-
-
-class RGB(tuple):
+class RGB(_IntColorTuple):
     # fmt: off
     @overload
     def __new__(cls, r: RED_TYPE, g: GREEN_TYPE, b: BLUE_TYPE) -> Self: ... # noqa
@@ -170,12 +213,12 @@ class RGB(tuple):
         """Return the blue value using a :class:`Blue` instance"""
         return Blue(self[2])
 
-    def to_RGBA(self, a: ALPHA_TYPE = MISSING) -> "RGBA":
-        """Return a :class:`RGBA` instance"""
-        return RGBA(self, a=a)
+    def to_int(self) -> int:
+        """Return the integer value"""
+        return (self.r << 16) + (self.g << 8) + self.b
 
 
-class RGBA(tuple):
+class RGBA(_IntColorTuple):
     # fmt: off
     @overload
     def __new__(cls, r: RED_TYPE, g: GREEN_TYPE, b: BLUE_TYPE, a: ALPHA_TYPE) -> Self: ... # noqa
@@ -235,9 +278,9 @@ class RGBA(tuple):
         """Return the alpha value using a :class:`Alpha` instance"""
         return Alpha(self[3])
 
-    def to_RGB(self) -> RGB:
-        """Return a :class:`RGB` instance"""
-        return RGB(self[:3])
+    def to_int(self) -> int:
+        """Return the integer value"""
+        return (self.r << 24) + (self.g << 16) + (self.b << 8) + self.a
 
 
 class HSL(tuple):
