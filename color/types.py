@@ -33,9 +33,6 @@ HUE_TYPE = Union[int, float, "Hue"]
 SATURATION_TYPE = Union[float, "Saturation"]
 LIGHTNESS_TYPE = Union[float, "Lightness"]
 
-RGB_TYPE = Union[int, tuple[RED_TYPE, GREEN_TYPE, BLUE_TYPE], "RGB"]
-RGBA_TYPE = Union[int, tuple[RED_TYPE, GREEN_TYPE, BLUE_TYPE, ALPHA_TYPE], "RGBA"]
-
 
 class _Percent(float):
     """
