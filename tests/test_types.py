@@ -7,11 +7,23 @@ def test_RGB() -> None:
         assert rgb.g == 0xF0
         assert rgb.b == 0x0F
 
+    rgb = RGB(0xFF_F0_0F)
+    assert_rgb(rgb)
+    assert_rgb(RGB(rgb))
     assert_rgb(RGB(0xFF, 0xF0, 0x0F))
     assert_rgb(RGB((0xFF, 0xF0, 0x0F)))
-    assert_rgb(RGB(0xFF_F0_0F))
-    assert_rgb(RGB(RGB(0xFF_F0_0F)))
     assert_rgb(RGB(RGBA(0xFF_F0_0F_AA)))
+
+    assert rgb > 0xFF_F0_00
+    assert rgb < 0xFF_F0_FF
+    assert rgb != 0xFF_F0_00
+    assert rgb == 0xFF_F0_0F
+    assert rgb >= 0xFF_F0_0F
+    assert rgb <= 0xFF_F0_0F
+    # assert rgb >> 1 == 0x7F_78_07
+
+    assert rgb.to_int() == 0xFF_F0_0F
+    assert RGB(RGBA(0xFF_F0_0F_AA)) == 0xFF_F0_0F
 
 
 def test_RGBA() -> None:
@@ -20,12 +32,14 @@ def test_RGBA() -> None:
         assert rgb.g == 0xF0
         assert rgb.b == 0x0F
         assert rgb.a == 0xAA
-        assert rgb == 0xFF_F0_0F_AA
 
     assert_rgba(RGBA(0xFF, 0xF0, 0x0F, 0xAA))
     assert_rgba(RGBA((0xFF, 0xF0, 0x0F, 0xAA)))
     assert_rgba(RGBA(0xFF_F0_0F_AA))
     assert_rgba(RGBA(RGBA(0xFF_F0_0F_AA)))
+
+    assert RGBA(0xFF_F0_0F_AA) == 0xFF_F0_0F_AA
+    assert RGBA(0xFF_F0_0F_AA).to_int() == 0xFF_F0_0F_AA
     assert RGBA(RGB(0xFF_F0_0F)) == 0xFF_F0_0F_FF
 
 
