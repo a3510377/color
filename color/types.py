@@ -24,6 +24,7 @@ __all__ = (
 RED = Union[int, float, "Red"]
 GREEN = Union[int, float, "Green"]
 BLUE = Union[int, float, "Blue"]
+ALPHA = Union[int, float, "Alpha"]
 HUE = Union[int, float, "Hue"]
 SATURATION = Union[float, "Saturation"]
 LIGHTNESS = Union[float, "Lightness"]
@@ -37,6 +38,7 @@ class _Float(float):
 class _PercentValue(_Float):
     """
     0~100% (float) => value = cls.max * percent
+
     0~max  (int)   => value = value
     """
 
@@ -59,15 +61,35 @@ class _Percent(_Float):
 
 
 class Red(_PercentValue):
-    """"""
+    """
+    0~100% (float) => value = 255 * value
+
+    0~255  (int)   => value = value
+    """
 
 
 class Green(_PercentValue):
-    """"""
+    """
+    0~100% (float) => value = 255 * value
+
+    0~255  (int)   => value = value
+    """
 
 
 class Blue(_PercentValue):
-    """"""
+    """
+    0~100% (float) => value = 255 * value
+
+    0~255  (int)   => value = value
+    """
+
+
+class Alpha(_PercentValue):
+    """
+    0~100% (float) => value = 255 * value
+
+    0~255  (int)   => value = value
+    """
 
 
 class Hue(_PercentValue):
@@ -121,6 +143,57 @@ class RGB(tuple):
     def b(self) -> Blue:
         """Return the blue value using a :class:`Blue` instance"""
         return Blue(self[2])
+
+
+class RGBA(tuple):
+    @overload
+    def __new__(cls, r: RED, g: GREEN, b: BLUE, a: ALPHA) -> "RGB":
+        ...
+
+    @overload
+    def __new__(cls, d: tuple[RED, GREEN, BLUE, ALPHA]) -> "RGB":
+        ...
+
+    @overload
+    def __new__(cls, d: int) -> "RGB":
+        ...
+
+    def __new__(cls, r=MISSING, g=MISSING, b=MISSING, a=MISSING) -> "RGB":
+        if isinstance(r, Iterable):
+            if len(r) != 4:
+                raise ValueError("Iterable must have 4 items")
+            r, g, b, a = r
+
+        if r is MISSING or g is MISSING or b is MISSING or a is MISSING:
+            raise ValueError("Missing value")
+
+        return super().__new__(cls, (r, g, b, a))
+
+    def __repr__(self) -> str:
+        return (
+            f"<{self.__class__.__name__} r={self.r:g} "
+            f"g={self.g:g} b={self.g:g} a={self.a:g}>"
+        )
+
+    @property
+    def r(self) -> Red:
+        """Return the blue value using a :class:`Red` instance"""
+        return Red(self[0])
+
+    @property
+    def g(self) -> Green:
+        """Return the blue value using a :class:`Green` instance"""
+        return Green(self[1])
+
+    @property
+    def b(self) -> Blue:
+        """Return the blue value using a :class:`Blue` instance"""
+        return Blue(self[2])
+
+    @property
+    def a(self) -> Alpha:
+        """Return the alpha value using a :class:`Alpha` instance"""
+        return Alpha(self[3])
 
 
 class HSL(tuple):
