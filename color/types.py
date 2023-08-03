@@ -35,15 +35,25 @@ class _Float(float):
 
 
 class _PercentValue(_Float):
+    """
+    0~100% (float) => value = cls.max * percent
+    0~max  (int)   => value = value
+    """
+
     max = 0xFF
 
     def __new__(cls, __x):
-        if isinstance(__x, float):
-            __x *= cls.max
-        return super().__new__(cls, int(min(cls.max, __x)))
+        return super().__new__(
+            cls,
+            int(min(cls.max, __x * cls.max if isinstance(__x, float) else __x)),
+        )
 
 
 class _Percent(_Float):
+    """
+    0~100% (float) => value = value
+    """
+
     def __new__(cls, __x):
         return super().__new__(cls, min(1, __x))
 
