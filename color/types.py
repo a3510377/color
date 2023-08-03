@@ -1,14 +1,17 @@
+from abc import abstractmethod
 from typing import Iterable, Union, overload
 
-from ._utils import MISSING
+from typing_extensions import Self
+
+from ._utils import MISSING, get_bytes
 
 __all__ = (
-    "RED",
-    "GREEN",
-    "BLUE",
-    "HUE",
-    "SATURATION",
-    "LIGHTNESS",
+    "RED_TYPE",
+    "GREEN_TYPE",
+    "BLUE_TYPE",
+    "HUE_TYPE",
+    "SATURATION_TYPE",
+    "LIGHTNESS_TYPE",
     "Red",
     "Green",
     "Blue",
@@ -16,18 +19,22 @@ __all__ = (
     "Saturation",
     "Lightness",
     "RGB",
+    "RGBA",
     "HSL",
     "HSV",
     "YUV",
 )
 
-RED = Union[int, float, "Red"]
-GREEN = Union[int, float, "Green"]
-BLUE = Union[int, float, "Blue"]
-ALPHA = Union[int, float, "Alpha"]
-HUE = Union[int, float, "Hue"]
-SATURATION = Union[float, "Saturation"]
-LIGHTNESS = Union[float, "Lightness"]
+RED_TYPE = Union[int, float, "Red"]
+GREEN_TYPE = Union[int, float, "Green"]
+BLUE_TYPE = Union[int, float, "Blue"]
+ALPHA_TYPE = Union[int, float, "Alpha"]
+HUE_TYPE = Union[int, float, "Hue"]
+SATURATION_TYPE = Union[float, "Saturation"]
+LIGHTNESS_TYPE = Union[float, "Lightness"]
+
+RGB_TYPE = Union[int, tuple[RED_TYPE, GREEN_TYPE, BLUE_TYPE], "RGB"]
+RGBA_TYPE = Union[int, tuple[RED_TYPE, GREEN_TYPE, BLUE_TYPE, ALPHA_TYPE], "RGBA"]
 
 
 class _Float(float):
@@ -44,7 +51,7 @@ class _PercentValue(_Float):
 
     max = 0xFF
 
-    def __new__(cls, __x):
+    def __new__(cls, __x) -> Self:
         return super().__new__(
             cls,
             int(min(cls.max, __x * cls.max if isinstance(__x, float) else __x)),
@@ -56,7 +63,7 @@ class _Percent(_Float):
     0~100% (float) => value = value
     """
 
-    def __new__(cls, __x):
+    def __new__(cls, __x) -> Self:
         return super().__new__(cls, min(1, __x))
 
 
@@ -106,22 +113,41 @@ class Lightness(_Percent):
     """"""
 
 
+@abstractmethod
+class _ColorTuple(tuple):
+    ...
+
+
 class RGB(tuple):
+    # fmt: off
     @overload
-    def __new__(cls, r: RED, g: GREEN, b: BLUE) -> "RGB":
-        ...
-
+    def __new__(cls, r: RED_TYPE, g: GREEN_TYPE, b: BLUE_TYPE) -> Self: ... # noqa
     @overload
-    def __new__(cls, d: tuple[RED, GREEN, BLUE]) -> "RGB":
-        ...
+    def __new__(cls, __d: tuple[RED_TYPE, GREEN_TYPE, BLUE_TYPE]) -> Self: ... # noqa
+    @overload
+    def __new__(cls, __value: int) -> Self: ... # noqa
+    @overload
+    def __new__(cls, __value: Self) -> Self: ... # noqa
+    @overload
+    def __new__(cls, __value: "RGBA") -> Self: ... # noqa
+    # fmt: on
 
-    def __new__(cls, r=MISSING, g=MISSING, b=MISSING) -> "RGB":
-        if isinstance(r, Iterable):
+    def __new__(cls, r=MISSING, g=MISSING, b=MISSING) -> Self:
+        # parse value from RGBA
+        if isinstance(r, RGBA):
+            r, g, b, _ = r
+        # parse iterable -> (r, g, b) or RGB
+        elif isinstance(r, Iterable):
             if len(r) != 3:
                 raise ValueError("Iterable must have 3 items")
             r, g, b = r
-
-        if r is MISSING or g is MISSING or b is MISSING:
+        # parse value -> 0xff_ff_ff
+        elif isinstance(r, int) and g is MISSING and b is MISSING:
+            if r < 0 or r > 0xFFFFFF:
+                raise ValueError("Value must be between 0 and 0xFFFFFF")
+            r, g, b = get_bytes(r, 2), get_bytes(r, 1), get_bytes(r)
+        # raise error if missing value
+        elif r is MISSING or g is MISSING or b is MISSING:
             raise ValueError("Missing value")
 
         return super().__new__(cls, (r, g, b))
@@ -144,27 +170,41 @@ class RGB(tuple):
         """Return the blue value using a :class:`Blue` instance"""
         return Blue(self[2])
 
+    def to_RGBA(self, a: ALPHA_TYPE = MISSING) -> "RGBA":
+        """Return a :class:`RGBA` instance"""
+        return RGBA(self, a=a)
+
 
 class RGBA(tuple):
+    # fmt: off
     @overload
-    def __new__(cls, r: RED, g: GREEN, b: BLUE, a: ALPHA) -> "RGB":
-        ...
-
+    def __new__(cls, r: RED_TYPE, g: GREEN_TYPE, b: BLUE_TYPE, a: ALPHA_TYPE) -> Self: ... # noqa
     @overload
-    def __new__(cls, d: tuple[RED, GREEN, BLUE, ALPHA]) -> "RGB":
-        ...
-
+    def __new__(cls, __d: tuple[RED_TYPE, GREEN_TYPE, BLUE_TYPE, ALPHA_TYPE]) -> Self: ... # noqa
     @overload
-    def __new__(cls, d: int) -> "RGB":
-        ...
+    def __new__(cls, __value: int) -> Self: ... # noqa
+    @overload
+    def __new__(cls, __value: Self) -> Self: ... # noqa
+    @overload
+    def __new__(cls, __value: "RGB", *, a: Alpha = ...) -> Self: ... # noqa
+    # fmt: on
 
-    def __new__(cls, r=MISSING, g=MISSING, b=MISSING, a=MISSING) -> "RGB":
-        if isinstance(r, Iterable):
+    def __new__(cls, r=MISSING, g=MISSING, b=MISSING, a=MISSING) -> Self:
+        # parse value from RGB
+        if isinstance(r, RGB):
+            r, g, b, a = *r, 0xFF
+        # parse iterable -> (r, g, b, a) or RGBA
+        elif isinstance(r, Iterable):
             if len(r) != 4:
                 raise ValueError("Iterable must have 4 items")
             r, g, b, a = r
-
-        if r is MISSING or g is MISSING or b is MISSING or a is MISSING:
+        # parse value -> 0xff_ff_ff_ff
+        elif isinstance(r, int) and g is MISSING and b is MISSING and a is MISSING:
+            if r < 0 or r > 0xFFFFFFFF:
+                raise ValueError("Value must be between 0 and 0xFFFFFFFF")
+            r, g, b, a = *RGB(r >> 8), get_bytes(r)
+        # raise error if missing value
+        elif r is MISSING or g is MISSING or b is MISSING or a is MISSING:
             raise ValueError("Missing value")
 
         return super().__new__(cls, (r, g, b, a))
@@ -195,17 +235,21 @@ class RGBA(tuple):
         """Return the alpha value using a :class:`Alpha` instance"""
         return Alpha(self[3])
 
+    def to_RGB(self) -> RGB:
+        """Return a :class:`RGB` instance"""
+        return RGB(self[:3])
+
 
 class HSL(tuple):
     @overload
-    def __new__(cls, h: HUE, s: SATURATION, l: LIGHTNESS) -> "HSL":
+    def __new__(cls, h: HUE_TYPE, s: SATURATION_TYPE, l: LIGHTNESS_TYPE) -> Self:
         ...
 
     @overload
-    def __new__(cls, d: tuple[HUE, SATURATION, LIGHTNESS]) -> "HSL":
+    def __new__(cls, d: tuple[HUE_TYPE, SATURATION_TYPE, LIGHTNESS_TYPE]) -> Self:
         ...
 
-    def __new__(cls, h=MISSING, s=MISSING, l=MISSING) -> "HSL":
+    def __new__(cls, h=MISSING, s=MISSING, l=MISSING) -> Self:
         if isinstance(h, Iterable):
             if len(h) != 3:
                 raise ValueError("Iterable must have 3 items")
@@ -237,14 +281,14 @@ class HSL(tuple):
 
 class HSV(tuple):
     @overload
-    def __new__(cls, h: HUE, s: SATURATION, v: float) -> "HSL":
+    def __new__(cls, h: HUE_TYPE, s: SATURATION_TYPE, v: float) -> Self:
         ...
 
     @overload
-    def __new__(cls, d: tuple[HUE, SATURATION, float]) -> "HSL":
+    def __new__(cls, d: tuple[HUE_TYPE, SATURATION_TYPE, float]) -> Self:
         ...
 
-    def __new__(cls, h=MISSING, s=MISSING, v=MISSING) -> "HSL":
+    def __new__(cls, h=MISSING, s=MISSING, v=MISSING) -> Self:
         if isinstance(h, Iterable):
             if len(h) != 3:
                 raise ValueError("Iterable must have 3 items")
@@ -276,14 +320,14 @@ class HSV(tuple):
 
 class YUV(tuple):
     @overload
-    def __new__(cls, y: float, u: float, v: float) -> "YUV":
+    def __new__(cls, y: float, u: float, v: float) -> Self:
         ...
 
     @overload
-    def __new__(cls, d: tuple[float, float, float]) -> "YUV":
+    def __new__(cls, d: tuple[float, float, float]) -> Self:
         ...
 
-    def __new__(cls, y=MISSING, u=MISSING, v=MISSING) -> "YUV":
+    def __new__(cls, y=MISSING, u=MISSING, v=MISSING) -> Self:
         if isinstance(y, Iterable):
             if len(y) != 3:
                 raise ValueError("Iterable must have 3 items")
