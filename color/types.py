@@ -117,8 +117,8 @@ class _IntColorTuple(tuple, ABC):
         raise NotImplementedError
 
     def __parse_int(self, value: Any) -> int:
-        if isinstance(value, int):
-            return value
+        if isinstance(value, (int, float)):
+            return int(value)
         elif isinstance(value, self.__class__):
             return value.to_int()
 
@@ -127,7 +127,7 @@ class _IntColorTuple(tuple, ABC):
     # ==
     def __eq__(self, __value: Any) -> bool:
         try:
-            return self.to_int() == self.__parse_int(__value)
+            return +self == self.__parse_int(__value)
         except ValueError:
             return False
 
@@ -138,16 +138,20 @@ class _IntColorTuple(tuple, ABC):
     # <
     def __lt__(self, __value: Any) -> bool:
         try:
-            return self.to_int() < self.__parse_int(__value)
+            return +self < self.__parse_int(__value)
         except ValueError:
             return False
 
     # >
     def __gt__(self, __value: Any) -> bool:
         try:
-            return self.to_int() > self.__parse_int(__value)
+            return +self > self.__parse_int(__value)
         except ValueError:
             return False
+
+    # +
+    def __pos__(self) -> int:
+        return self.to_int()
 
     # <=
     def __le__(self, __value: Any) -> bool:
@@ -156,6 +160,30 @@ class _IntColorTuple(tuple, ABC):
     # >=
     def __ge__(self, __value: Any) -> bool:
         return self == __value or self > __value
+
+    # ~
+    def __inv__(self) -> Self:
+        return self.__class__(~self.to_int())
+
+    # <<
+    def __lshift__(self, __value: int) -> Self:
+        return self.__class__(+self << self.__parse_int(__value))
+
+    # >>
+    def __rshift__(self, __value: int) -> Self:
+        return self.__class__(+self >> self.__parse_int(__value))
+
+    # &
+    def __and__(self, __value: int) -> Self:
+        return self.__class__(+self & self.__parse_int(__value))
+
+    # |
+    def __or__(self, __value: int) -> Self:
+        return self.__class__(+self | self.__parse_int(__value))
+
+    # ^
+    def __xor__(self, __value: int) -> Self:
+        return self.__class__(+self ^ self.__parse_int(__value))
 
 
 class RGB(_IntColorTuple):
