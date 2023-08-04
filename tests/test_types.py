@@ -26,7 +26,7 @@ def test_RGB() -> None:
     assert rgb | 1 == 0xFFF00F
     assert rgb ^ 1 == 0xFFF00E
 
-    assert rgb.to_int() == 0xFF_F0_0F
+    assert rgb == 0xFF_F0_0F
     assert RGB(RGBA(0xFF_F0_0F_AA)) == 0xFF_F0_0F
 
 
