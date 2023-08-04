@@ -149,10 +149,6 @@ class _IntColorTuple(tuple, ABC):
         except ValueError:
             return False
 
-    # +
-    def __pos__(self) -> int:
-        return self.to_int()
-
     # <=
     def __le__(self, __value: Any) -> bool:
         return self == __value or self < __value
@@ -161,29 +157,33 @@ class _IntColorTuple(tuple, ABC):
     def __ge__(self, __value: Any) -> bool:
         return self == __value or self > __value
 
+    # +
+    def __pos__(self) -> int:
+        return self.to_int()
+
     # ~
-    def __inv__(self) -> Self:
-        return self.__class__(~self.to_int())
+    def __invert__(self) -> int:
+        return ~self.to_int()
 
     # <<
-    def __lshift__(self, __value: int) -> Self:
-        return self.__class__(+self << self.__parse_int(__value))
+    def __lshift__(self, __value: int) -> int:
+        return +self << self.__parse_int(__value)
 
     # >>
-    def __rshift__(self, __value: int) -> Self:
-        return self.__class__(+self >> self.__parse_int(__value))
+    def __rshift__(self, __value: int) -> int:
+        return +self >> self.__parse_int(__value)
 
     # &
-    def __and__(self, __value: int) -> Self:
-        return self.__class__(+self & self.__parse_int(__value))
+    def __and__(self, __value: int) -> int:
+        return +self & self.__parse_int(__value)
 
     # |
-    def __or__(self, __value: int) -> Self:
-        return self.__class__(+self | self.__parse_int(__value))
+    def __or__(self, __value: int) -> int:
+        return +self | self.__parse_int(__value)
 
     # ^
-    def __xor__(self, __value: int) -> Self:
-        return self.__class__(+self ^ self.__parse_int(__value))
+    def __xor__(self, __value: int) -> int:
+        return +self ^ self.__parse_int(__value)
 
 
 class RGB(_IntColorTuple):
