@@ -111,7 +111,10 @@ class Hue(_PercentValue):
     max = 360
 
 
-class _IntColorTuple(tuple, ABC):
+class _IntColorTuple(ABC):
+    def __init__(self, value: Iterable[Any]) -> None:
+        ...
+
     @abstractmethod
     def to_int(cls) -> int:
         raise NotImplementedError
