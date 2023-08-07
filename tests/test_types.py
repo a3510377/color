@@ -29,6 +29,12 @@ def test_RGB() -> None:
     assert rgb == 0xFF_F0_0F
     assert RGB(RGBA(0xFF_F0_0F_AA)) == 0xFF_F0_0F
 
+    rgb[0] = 0xF0
+    assert rgb["r"] == rgb.r
+
+    rgb["r"] = 0xFF
+    assert rgb[0] == rgb.r
+
 
 def test_RGBA() -> None:
     def assert_rgba(rgb: RGBA) -> None:
