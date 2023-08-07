@@ -1,5 +1,5 @@
-from abc import ABC, abstractmethod
-from typing import Any, Iterable, Union, overload
+from abc import ABCMeta, abstractmethod
+from typing import Any, Callable, ClassVar, Iterable, Union, overload
 
 from typing_extensions import Self
 
@@ -111,7 +111,33 @@ class Hue(_PercentValue):
     max = 360
 
 
-class _IntColorTuple(Iterable, ABC):
+class _IntColorTupleMeta(ABCMeta):
+    __getattr_func__: dict[str, Callable[[Self], None]]
+    __setattr_func__: dict[str, Callable[[Self, Any], None]]
+
+    def __new__(cls, *args, **kwargs):
+        new_class = super().__new__(cls, *args, **kwargs)
+
+        new_class.__getattr_func__ = {
+            name: value.fget
+            for name, value in new_class.__dict__.items()
+            # has is property.getter
+            if isinstance(value, property) and value.fget
+        }
+        new_class.__setattr_func__ = {
+            name: value.fset
+            for name, value in new_class.__dict__.items()
+            # has is property.setter
+            if isinstance(value, property) and value.fset
+        }
+
+        return new_class
+
+
+class _IntColorTuple(Iterable, metaclass=_IntColorTupleMeta):
+    __getattr_func__: ClassVar[dict[str, Callable[[Self], None]]]
+    __setattr_func__: ClassVar[dict[str, Callable[[Self, Any], None]]]
+
     def __init__(self, value: Iterable[Any]) -> None:
         self._data = []
 
@@ -202,12 +228,15 @@ class _IntColorTuple(Iterable, ABC):
         return len(self._data)
 
     def __getitem__(self, i: Any):
-        if isinstance(i, slice):
-            return self.__class__(self._data[i])
+        if func := self.__getattr_func__.get(i):
+            return func(self)
         return self._data[i]
 
-    def __setitem__(self, i: Any, item: Any):
-        self._data[i] = item
+    def __setitem__(self, i: Any, value: Any):
+        if func := self.__setattr_func__.get(i):
+            func(self, value)
+            return
+        self._data[i] = value
 
     def __iter__(self):
         return iter(self._data)
@@ -255,15 +284,27 @@ class RGB(_IntColorTuple):
         """Return the blue value using a :class:`Red` instance"""
         return Red(self[0])
 
+    @r.setter
+    def r(self, value: RED_TYPE) -> Red:
+        self[0] = value
+
     @property
     def g(self) -> Green:
         """Return the blue value using a :class:`Green` instance"""
         return Green(self[1])
 
+    @g.setter
+    def g(self, value: GREEN_TYPE) -> Green:
+        self[1] = value
+
     @property
     def b(self) -> Blue:
         """Return the blue value using a :class:`Blue` instance"""
         return Blue(self[2])
+
+    @b.setter
+    def b(self, value: BLUE_TYPE) -> Blue:
+        self[2] = value
 
     def to_int(self) -> int:
         """Return the integer value"""
@@ -315,20 +356,36 @@ class RGBA(_IntColorTuple):
         """Return the blue value using a :class:`Red` instance"""
         return Red(self[0])
 
+    @r.setter
+    def r(self, value: RED_TYPE) -> None:
+        self[0] = value
+
     @property
     def g(self) -> Green:
         """Return the blue value using a :class:`Green` instance"""
         return Green(self[1])
+
+    @g.setter
+    def g(self, value: GREEN_TYPE) -> None:
+        self[1] = value
 
     @property
     def b(self) -> Blue:
         """Return the blue value using a :class:`Blue` instance"""
         return Blue(self[2])
 
+    @b.setter
+    def b(self, value: BLUE_TYPE) -> None:
+        self[2] = value
+
     @property
     def a(self) -> Alpha:
         """Return the alpha value using a :class:`Alpha` instance"""
         return Alpha(self[3])
+
+    @a.setter
+    def a(self, value: ALPHA_TYPE) -> None:
+        self[3] = value
 
     def to_int(self) -> int:
         """Return the integer value"""
