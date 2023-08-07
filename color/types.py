@@ -111,9 +111,16 @@ class Hue(_PercentValue):
     max = 360
 
 
-class _IntColorTuple(ABC):
+class _IntColorTuple(Iterable, ABC):
     def __init__(self, value: Iterable[Any]) -> None:
-        ...
+        self._data = []
+
+        if isinstance(value, _IntColorTuple):
+            self._data = value._data
+        elif isinstance(value, Iterable):
+            self._data = list(value)
+        else:
+            raise ValueError("Invalid value")
 
     @abstractmethod
     def to_int(cls) -> int:
@@ -188,22 +195,39 @@ class _IntColorTuple(ABC):
     def __xor__(self, __value: int) -> int:
         return +self ^ self.__parse_int(__value)
 
+    def __contains__(self, item: Any):
+        return item in self._data
+
+    def __len__(self):
+        return len(self._data)
+
+    def __getitem__(self, i: Any):
+        if isinstance(i, slice):
+            return self.__class__(self._data[i])
+        return self._data[i]
+
+    def __setitem__(self, i: Any, item: Any):
+        self._data[i] = item
+
+    def __iter__(self):
+        return iter(self._data)
+
 
 class RGB(_IntColorTuple):
     # fmt: off
     @overload
-    def __new__(cls, r: RED_TYPE, g: GREEN_TYPE, b: BLUE_TYPE) -> Self: ... # noqa
+    def __init__(cls, r: RED_TYPE, g: GREEN_TYPE, b: BLUE_TYPE) -> Self: ... # noqa
     @overload
-    def __new__(cls, __d: tuple[RED_TYPE, GREEN_TYPE, BLUE_TYPE]) -> Self: ... # noqa
+    def __init__(cls, __d: tuple[RED_TYPE, GREEN_TYPE, BLUE_TYPE]) -> Self: ... # noqa
     @overload
-    def __new__(cls, __value: int) -> Self: ... # noqa
+    def __init__(cls, __value: int) -> Self: ... # noqa
     @overload
-    def __new__(cls, __value: Self) -> Self: ... # noqa
+    def __init__(cls, __value: Self) -> Self: ... # noqa
     @overload
-    def __new__(cls, __value: "RGBA") -> Self: ... # noqa
+    def __init__(cls, __value: "RGBA") -> Self: ... # noqa
     # fmt: on
 
-    def __new__(cls, r=MISSING, g=MISSING, b=MISSING) -> Self:
+    def __init__(self, r=MISSING, g=MISSING, b=MISSING) -> Self:
         # parse value from RGBA
         if isinstance(r, RGBA):
             r, g, b, _ = r
@@ -221,7 +245,7 @@ class RGB(_IntColorTuple):
         elif r is MISSING or g is MISSING or b is MISSING:
             raise ValueError("Missing value")
 
-        return super().__new__(cls, (r, g, b))
+        return super().__init__((r, g, b))
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} r={self.r:g} g={self.g:g} b={self.g:g}>"
@@ -249,18 +273,18 @@ class RGB(_IntColorTuple):
 class RGBA(_IntColorTuple):
     # fmt: off
     @overload
-    def __new__(cls, r: RED_TYPE, g: GREEN_TYPE, b: BLUE_TYPE, a: ALPHA_TYPE) -> Self: ... # noqa
+    def __init__(cls, r: RED_TYPE, g: GREEN_TYPE, b: BLUE_TYPE, a: ALPHA_TYPE) -> Self: ... # noqa
     @overload
-    def __new__(cls, __d: tuple[RED_TYPE, GREEN_TYPE, BLUE_TYPE, ALPHA_TYPE]) -> Self: ... # noqa
+    def __init__(cls, __d: tuple[RED_TYPE, GREEN_TYPE, BLUE_TYPE, ALPHA_TYPE]) -> Self: ... # noqa
     @overload
-    def __new__(cls, __value: int) -> Self: ... # noqa
+    def __init__(cls, __value: int) -> Self: ... # noqa
     @overload
-    def __new__(cls, __value: Self) -> Self: ... # noqa
+    def __init__(cls, __value: Self) -> Self: ... # noqa
     @overload
-    def __new__(cls, __value: "RGB", *, a: Alpha = ...) -> Self: ... # noqa
+    def __init__(cls, __value: "RGB", *, a: Alpha = ...) -> Self: ... # noqa
     # fmt: on
 
-    def __new__(cls, r=MISSING, g=MISSING, b=MISSING, a=MISSING) -> Self:
+    def __init__(cls, r=MISSING, g=MISSING, b=MISSING, a=MISSING) -> Self:
         # parse value from RGB
         if isinstance(r, RGB):
             r, g, b, a = *r, 0xFF
@@ -278,7 +302,7 @@ class RGBA(_IntColorTuple):
         elif r is MISSING or g is MISSING or b is MISSING or a is MISSING:
             raise ValueError("Missing value")
 
-        return super().__new__(cls, (r, g, b, a))
+        return super().__init__((r, g, b, a))
 
     def __repr__(self) -> str:
         return (
